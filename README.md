@@ -104,6 +104,75 @@ python app.py
  * Running on http://0.0.0.0:5000
 ```
 
+## Deploy on Render
+
+The `render.yaml` file in this directory configures standalone deployment on Render.
+
+### Quick Deploy
+
+1. **Fork/Push** the repository to GitHub
+2. **Connect** your repository to Render at [https://dashboard.render.com](https://dashboard.render.com)
+3. **Create Blueprint**:
+   - Select "New" → "Blueprint"
+   - Choose your repository
+   - Point to `python_ai/render.yaml`
+   - Render will auto-detect the root of the AI service
+
+4. **Set Environment Variables** (in Render dashboard):
+   - `GEMINI_API_KEY`: Your Google Gemini API key (optional, but recommended for fallback responses)
+   - `PYTHONUNBUFFERED`: Set to `1` (auto-configured in blueprint)
+
+5. **Deploy**:
+   - Click "Apply"
+   - Render builds the Docker image and starts the service
+   - Service will be available at `https://servpro-python-ai.onrender.com` (or custom subdomain)
+
+### Health Check
+
+Once deployed, verify the service is running:
+```bash
+curl https://servpro-python-ai.onrender.com/health
+```
+
+Expected response:
+```json
+{
+  "status": "AI Chatbot service is running",
+  "model": "TF-IDF + Cosine Similarity (Lightweight - No ML Library)",
+  "version": "1.0.0"
+}
+```
+
+### Integration with Backend
+
+Once deployed on Render, configure the backend to use the AI service:
+
+In `ServProBackend/.env` (or Render env vars):
+```env
+PYTHON_AI_SERVICE=https://servpro-python-ai.onrender.com
+PYTHON_AI_TIMEOUT_MS=20000
+PYTHON_AI_RETRIES=3
+PYTHON_AI_RETRY_BASE_DELAY_MS=2000
+```
+
+The backend will retry automatically on cold start or transient failures.
+
+### Troubleshooting Deployment
+
+**Service won't start:**
+- Check Render logs: Dashboard → Your Service → Logs
+- Verify `Dockerfile` is present and valid
+- Ensure `requirements.txt` is installed correctly
+
+**Cold start delays (free plan):**
+- Expected on Render free tier: initial request may take 30-60s
+- Backend has built-in retry/backoff logic for this
+- Upgrade to Pro tier for instant availability
+
+**Gemini fallback not working:**
+- Verify `GEMINI_API_KEY` is set in Render environment
+- Check Python AI service logs for API errors
+
 ## API Endpoints
 
 ### 1. Health Check
